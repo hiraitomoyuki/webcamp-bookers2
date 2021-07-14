@@ -1,39 +1,53 @@
 class UsersController < ApplicationController
-  def index
-    @user=current_user  # @user誰がログインしているのか、idつけるとエラー
-    @users=User.all
-    @book=Book.new
-    @books=Book.all
-  end
   
+  before_action :authenticate_user!
+  before_action :ensure_current_user, {only: [:edit,:update,:destroy]}
+
   def show
-    @user=User.find(params[:id])
-    @book=Book.new
-    @books=Book.where(user_id: @user.id) # user_idカラムに@user.idで投稿された全レコードを取得
+    @user = User.find(params[:id])
+    @book = Book.new
+    @books = @user.books
   end
-  
+
   def edit
-    @user=User.find(params[:id])
-    if @user == current_user
-      render :edit # 現在ログインしている人だったらedit
-    else
-      redirect_to user_path(current_user) # そうでなければ現在ログインしている人のusersの詳細画面へ
-    end
+    @user = User.find(params[:id])
   end
-  
+
+  def index
+    @users =User.all
+    @books = Book.all
+    @book = Book.new
+    @user = current_user
+  end
+
   def update
-    @user=User.find(params[:id])
+    @user = User.find(params[:id])
     if @user.update(user_params)
-       redirect_to user_path(current_user), notice:'You have updated user successfully.'
+      flash[:notice] = "You have updated user successfully."
+
+    redirect_to user_path(@user.id)
     else
-       render :edit
+    flash[:notice] = "error."
+            render :edit
     end
   end
-  
+
   private
-  
-  def user_params
-    params.require(:user).permit(:name, :introduction, :profile_image)
+
+  def book_params
+      params.require(:book).permit(:title, :body)
   end
-  
+
+  def user_params
+    params.require(:user).permit(:name, :profile_image , :introduction)
+  end
+
+  def  ensure_current_user
+        @user = User.find(params[:id])
+     if @user.id != current_user.id
+        redirect_to user_path(current_user.id)
+
+     end
+  end
 end
+
